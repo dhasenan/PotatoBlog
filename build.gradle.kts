@@ -5,22 +5,16 @@
  * Learn more about Gradle by exploring our Samples at https://docs.gradle.org/8.14.1/samples
  */
 plugins {
-  alias(libs.plugins.kotlin.jvm) 
+  alias(libs.plugins.kotlin.jvm)
   application
 }
 
 repositories {
-  mavenCentral() 
-
-  // for swt
-  maven {
-    url = uri("https://repository.jboss.org/")
-  }
+  mavenCentral()
 }
 
 dependencies {
-  // https://mvnrepository.com/artifact/org.eclipse.swt/org.eclipse.swt
-  implementation("org.eclipse.swt:org.eclipse.swt:3.2.0-v3232o")
+  implementation(files("lib/swt-linux-x64.jar"))
 }
 
 java.sourceSets["main"].kotlin {
@@ -32,5 +26,8 @@ application {
 }
 
 tasks.named<Test>("test") {
-  useJUnitPlatform() 
+  useJUnitPlatform()
+}
+tasks.withType<org.gradle.jvm.tasks.Jar>() {
+    exclude("META-INF/ECLIPSE_.RSA", "META-INF/ECLIPSE_.SF", "META-INF/MANIFEST.MF")
 }
