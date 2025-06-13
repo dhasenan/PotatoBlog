@@ -10,10 +10,8 @@ fun main() {
   val display = Display()
   val shell = Shell(display)
   shell.text = "PotatoBlog"
-  val shellRow = RowLayout()
-  shellRow.fill = true
-  shellRow.justify = true
-  shell.layout = shellRow
+  val grid = GridLayout(1, false)
+  shell.layout = grid
   val menubar = Menu(shell, SWT.BAR)
   shell.menuBar = menubar
 
@@ -21,19 +19,16 @@ fun main() {
   val fileItem = MenuItem(menubar, SWT.PUSH)
   val fileMenu = Menu(menubar)
   fileItem.text = "&File"
-  shell.open()
 
-  val mainPane = Composite(shell, SWT.FILL)
-  val mainRow = FillLayout(SWT.HORIZONTAL)
-  mainRow.type = SWT.HORIZONTAL
-  //mainRow.fill = true
-  shellRow.justify = true
-  mainPane.layout = mainRow
-  val fileTree = Tree(mainPane, SWT.SINGLE)
-  val fileSash = Sash(mainPane, SWT.VERTICAL)
-  val editor = StyledText(mainPane, SWT.WRAP or SWT.FILL)
-  val preview = Browser(mainPane, SWT.FILL)
+  val sash = SashForm(shell, SWT.HORIZONTAL)
+  sash.layoutData = GridData(SWT.FILL, SWT.FILL, true, true)
+  val fileTree = Tree(sash, SWT.SINGLE)
+  val editor = StyledText(sash, SWT.WRAP or SWT.FILL)
+  val preview = Browser(sash, SWT.FILL)
   preview.url = "https://example.org"
+  sash.setWeights(1, 4, 4)
+
+  shell.open()
 
   while (!shell.isDisposed()) {
     if (!display.readAndDispatch()) {
