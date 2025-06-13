@@ -6,6 +6,38 @@ import org.eclipse.swt.custom.*
 import org.eclipse.swt.layout.*
 import org.eclipse.swt.widgets.*
 
+fun loadBlog(path: String) {}
+
+fun showNewBlogWindow() {}
+
+fun saveBlog() {}
+
+fun buildMenu(menubar: Menu, shell: Shell) {
+  val fileItem = MenuItem(menubar, SWT.CASCADE)
+  val fileMenu = Menu(menubar)
+  fileItem.text = "&File"
+  fileItem.menu = fileMenu
+
+  val newItem = MenuItem(fileMenu, SWT.PUSH)
+  newItem.text = "&New"
+  newItem.addListener(SWT.Selection, {e -> showNewBlogWindow()})
+
+  val openItem = MenuItem(fileMenu, SWT.PUSH)
+  openItem.text = "&Open"
+  openItem.addListener(SWT.Selection, {e ->
+    val fod = FileDialog(shell, SWT.OPEN)
+    fod.filterExtensions = arrayOf("*.pblog")
+    val path = fod.open()
+    if (path != null) {
+      loadBlog(path)
+    }
+  })
+
+  val saveItem = MenuItem(fileMenu, SWT.PUSH)
+  saveItem.text = "&Save"
+  saveItem.addListener(SWT.Selection, {e -> saveBlog()})
+}
+
 fun main() {
   val display = Display()
   val shell = Shell(display)
@@ -15,10 +47,8 @@ fun main() {
   val menubar = Menu(shell, SWT.BAR)
   shell.menuBar = menubar
 
-  // TODO build main menu
-  val fileItem = MenuItem(menubar, SWT.PUSH)
-  val fileMenu = Menu(menubar)
-  fileItem.text = "&File"
+  buildMenu(menubar, shell)
+
 
   val sash = SashForm(shell, SWT.HORIZONTAL)
   sash.layoutData = GridData(SWT.FILL, SWT.FILL, true, true)
