@@ -16,6 +16,7 @@ repositories {
 dependencies {
   implementation("com.google.guava:guava:33.4.8-jre")
   implementation("com.google.inject:guice:7.0.0")
+  implementation("com.github.spullara.mustache.java:compiler:0.9.14")
 
   // TODO pick right version for the current platform
   implementation(files("lib/swt-linux-x64.jar"))

@@ -8,8 +8,6 @@ import org.eclipse.swt.widgets.*
 import com.google.inject.*
 import com.google.common.eventbus.EventBus
 
-class Blog {}
-
 class NewBlogWindow(val ctx: Context) {
 
 }
@@ -80,6 +78,7 @@ class MainGui {
         display.sleep()
       }
     }
+    eventBus.post(ShuttingDown())
     display.dispose()
   }
 }

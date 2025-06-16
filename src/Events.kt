@@ -1,0 +1,3 @@
+package potatoblog
+
+class ShuttingDown {}
