@@ -1,0 +1,28 @@
+<!--
+  This template shows a blog page, but not a post.
+
+  Posts and pages use the same data format, and if you don't have a specific template for pages,
+  PotatoBlog will fall back to the post.html template.
+
+  This is not a full HTML doc; it's going to be put into the 'default.html' template as
+  {{{mainContent}}}!
+  So you don't need the <html> or <body> tags or anything like that.
+-->
+
+<article>
+  <!-- We used h1 for the blog title, and we generally want to use higher number  -->
+  <h2>{{page.title}}</h2>
+  <!-- You can include the date here -->
+  <div class="author">by {{page.author}} on {{page.date}}</div>
+
+  <!--
+    page.bodyHTML is the actual text of the page in HTML.
+    Since that's got valid HTML in it, you need to use the triple curly brackets here.
+    Otherwise you'll see all the HTML in the page instead of seeing formatted text and images!
+  -->
+  {{{page.bodyHTML}}}
+</article>
+<!--
+  This template doesn't have the tags section because pages don't appear in tag archives (or date
+  archives either). So while you *could* link to them, it's just not useful.
+-->

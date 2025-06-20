@@ -1,0 +1,33 @@
+<!--
+  This template shows a blog post, but not a page.
+
+  Posts and pages use the same data format, and if you don't have a specific template for pages,
+  PotatoBlog will fall back to this template.
+
+  This is not a full HTML doc; it's going to be put into the 'default.html' template as
+  {{{mainContent}}}!
+  So you don't need the <html> or <body> tags or anything like that.
+-->
+
+<article>
+  <!-- We used h1 for the blog title, and we generally want to use higher number  -->
+  <h2>{{post.title}}</h2>
+  <div class="author">by {{post.author}} on {{post.date}}</div>
+
+  <!--
+    post.bodyHTML is the actual text of the post in HTML.
+    Since that's got valid HTML in it, you need to use the triple curly brackets here.
+    Otherwise you'll see all the HTML in the post instead of seeing formatted text and images!
+  -->
+  {{{post.bodyHTML}}}
+</article>
+<div class="tags">
+  <!--
+    tags is a list, so you can go through that list using {{#tags}}...{{/tags}}
+    Anything between those two markers gets repeated for each tag in the list.
+    The inside bit can access the variables on that given tag.
+  -->
+  {{#post.tags}}
+    <a href="{{archiveURL}}">{{name}}</a>
+  {{/post.tags}}
+</div>
