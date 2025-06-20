@@ -2,15 +2,33 @@ package potatoblog
 
 import java.time.*
 
+class BlogLoadException (msg: String): Exception(msg)
+
+fun defaultBlog(): Blog {
+  throw BlogLoadException("not yet implemented")
+}
+
+fun defaultTheme(): Theme {
+
+}
+
+fun loadBlog(path: String): Blog {
+  throw BlogLoadException("not yet implemented")
+}
+
 class Blog {
   var name = "My Blog"
   var baseURL = "https://my-blog.invalid"
   var author = "My Own Self"
-
   var staticFiles: List<StaticFile> = ArrayList()
+  var theme = Theme()
 
   fun resource(name: String): StaticFile? {
     return null;
+  }
+
+  fun save(path: String) {
+    // TODO
   }
 }
 

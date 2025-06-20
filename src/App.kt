@@ -10,10 +10,19 @@ class PotatoModule : AbstractModule() {
   }
 }
 
-class Context {
+class Context @Inject constructor(val eventBus: EventBus) {
   var blog: Blog? = null
-}
+    private set
+  var blogPath: String? = null
+    private set
+  var unsavedData = false
 
+  fun openBlog(b: Blog, path: String) {
+    this.blog = b
+    this.blogPath = path
+    eventBus.post(ChangedBlog(b))
+  }
+}
 
 fun main() {
   val injector = Guice.createInjector(PotatoModule())

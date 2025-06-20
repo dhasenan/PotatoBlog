@@ -1,3 +1,5 @@
 package potatoblog
 
-class ShuttingDown {}
+class ChangedBlog(val blog: Blog)
+class PleaseQuit
+class ShuttingDown
