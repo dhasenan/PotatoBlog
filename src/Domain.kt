@@ -15,7 +15,7 @@ fun defaultBlog(): Blog {
   blog.posts.add(firstPost)
   val aboutMe = Post()
   aboutMe.type = PostType.PAGE
-  aboutMe.url = "/about.html"
+  aboutMe.path = "/about.html"
   aboutMe.body = "I'm a person with a blog!"
   aboutMe.status = PostStatus.PUBLISHED
   blog.posts.add(aboutMe)
@@ -82,20 +82,33 @@ fun now(): ZonedDateTime = ZonedDateTime.ofInstant(
   Clock.systemDefaultZone().instant(),
   Clock.systemDefaultZone().zone)
 
+interface BlogFile {
+  var path: String
+  val mimeType: String
+}
+
 @Entity
-class Post {
+class Post: BlogFile {
   @Id @GeneratedValue var id: Int = 0
 
   @Column var type = PostType.BLOGPOST
   @Column var status = PostStatus.DRAFT
   @Column var title = "A Very Good Post"
-  @Column var url = ""
+  @Column override var path = ""
   @Column var publishDate = now()
   @Column var bodyType = BodyType.MARKDOWN
   @Column var body = "This is my post, and I am proud of it"
 
   @OneToMany var theme: Theme? = null
   @OneToMany var blog: Blog? = null
+
+  override val mimeType: String
+    get() {
+      return when (bodyType) {
+        BodyType.MARKDOWN -> "text/markdown"
+        BodyType.HTML -> "text/html"
+      }
+    }
 }
 
 enum class FileUsage {
@@ -104,12 +117,12 @@ enum class FileUsage {
 }
 
 @Entity
-class StaticFile {
+class StaticFile: BlogFile {
   @Id @GeneratedValue var id: Int = 0
   @Column var usage = FileUsage.PUBLISH
-  @Column var path = "static/newfile"
+  @Column override var path = "static/newfile"
   @Column var data = ByteArray(0)
-  @Column var mimeType = "application/octet-stream"
+  @Column override var mimeType = "application/octet-stream"
   @Column var publishDate = now()
 
   fun asString(): String? {
@@ -122,4 +135,20 @@ class Theme {
   @Id @GeneratedValue var id: Int = 0
   var name = "Custom theme"
   var files: MutableList<StaticFile> = ArrayList()
+}
+
+fun pathParent(p: String): String {
+  val s = p.lastIndexOf("/")
+  if (s <= 0) {
+    return p
+  }
+  return p.subSequence(0, s - 1).toString()
+}
+
+fun basename(p: String): String {
+  val s = p.lastIndexOf("/")
+  if (s < 0) {
+    return p
+  }
+  return p.subSequence(s + 1, p.length).toString()
 }

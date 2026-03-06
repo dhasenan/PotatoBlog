@@ -67,7 +67,7 @@ class Swapper(val parent: Composite, val widgets: List<Composite>) {
 }
 
 fun ctrl(c: Char): Int {
-  return SWT.MOD1 or c.toInt()
+  return SWT.MOD1 or c.code
 }
 
 @Singleton
@@ -186,6 +186,84 @@ class EditView(val ctx: Context, val parent: Composite) {
     view.setLayout(GridLayout(1, true))
     postEdit.view.layoutData = GridData(SWT.FILL, SWT.FILL, true, true)
   }
+}
+
+class BlogTreeView @Inject constructor(val controller: BlogTreeController): View<Tree>() {
+  val pathToItem = mutableMapOf<String, TreeItem>()
+  var blog: Blog? = null
+
+  override fun build() {
+    val c = Composite(parent as Composite, 0)
+    c.layout = GridLayout(1, false)
+    val header = Label(c, SWT.HORIZONTAL)
+    header.text = "Blog!"
+    self = Tree(c, SWT.MULTI)
+    self.clearAll(true)
+  }
+
+  fun item(path: String): TreeItem {
+    if (pathToItem.containsKey(path)) {
+      return pathToItem[path]!!
+    }
+    val p = pathParent(path)
+    if (p == path) {
+      // root level item
+      val it = TreeItem(self, 0)
+      it.text = basename(p)
+      pathToItem[p] = it
+      return it
+    }
+    val parent = item(p)
+    val it = TreeItem(parent, 0)
+    it.text = basename(path)
+    pathToItem[path] = it
+    return it
+  }
+
+  @Subscribe
+  fun changedBlog(e: ChangedBlog) {
+    blog = e.blog
+    self.clearAll(true)
+    // TODO sorting
+    for (post in e.blog.posts) {
+      item(post.path).data = post
+    }
+    for (staticFile in e.blog.staticFiles) {
+      item(staticFile.path).data = staticFile
+    }
+  }
+
+  @Subscribe
+  fun fileAdded(e: FileAdded) {
+    item(e.file.path).data = e.file
+  }
+
+  fun remove(it: TreeItem) {
+    var parent = it.parentItem
+    if (parent != null) {
+      parent.clear(parent.indexOf(it), true)
+      if (parent.itemCount == 0) {
+        remove(parent)
+      }
+    } else {
+      self.clear(self.indexOf(it), true)
+    }
+  }
+
+  @Subscribe
+  fun fileRemoved(e: FileRemoved) {
+    if (e.file.path in pathToItem) {
+      val it = pathToItem[e.file.path]
+    }
+  }
+  @Subscribe
+  fun fileRenamed(e: FileRenamed) {
+    // TODO
+  }
+}
+
+class BlogTreeController {
+  lateinit var view: BlogTreeView
 }
 
 class MainGui @Inject constructor(
