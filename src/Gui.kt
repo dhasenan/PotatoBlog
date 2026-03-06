@@ -39,6 +39,31 @@ class ErrorDialog @Inject constructor(val display: Display) {
   }
 }
 
+class Swapper(val parent: Composite, val widgets: List<Composite>) {
+  val self = Composite(parent, SWT.NONE)
+  init {
+    self.layout = GridLayout(1, false)
+    for (widget in widgets) {
+      val data = GridData()
+      data.exclude = true
+      widget.layoutData = data
+      widget.visible = false
+    }
+    if (widgets.size > 0) {
+      show(widgets[0])
+    }
+  }
+
+  fun show(widget: Composite) {
+    if (!widgets.contains(widget)) {
+      throw IllegalArgumentException(
+        "attempted to show widget $widget that isn't part of this control")
+    }
+    widget.visible = true
+    (widget.layoutData as GridData).exclude = false
+  }
+}
+
 fun ctrl(c: Char): Int {
   return SWT.MOD1 or (c as Int)
 }
@@ -48,13 +73,19 @@ class FileMenuView @Inject constructor(val controller: FileMenuController) : Vie
     val parentMenu = parent as Menu
     val fileItem = MenuItem(parentMenu, SWT.CASCADE)
     val fileMenu = Menu(parentMenu)
+    self = fileMenu
     fileItem.text = "&File"
     fileItem.menu = fileMenu
 
     val newItem = MenuItem(fileMenu, SWT.PUSH)
-    newItem.text = "&New"
+    newItem.text = "New &Blog"
     newItem.addListener(SWT.Selection, {e -> controller.newBlog()})
-    newItem.accelerator = ctrl('n')
+    // no accelerator because you shouldn't be doing this often
+
+    val newPostItem = MenuItem(fileMenu, SWT.PUSH)
+    newPostItem.text = "&New Post/Page"
+    newPostItem.addListener(SWT.Selection, {e -> controller.newPost()})
+    newPostItem.accelerator = ctrl('n')
 
     val openItem = MenuItem(fileMenu, SWT.PUSH)
     openItem.text = "&Open"
@@ -83,13 +114,9 @@ class FileMenuView @Inject constructor(val controller: FileMenuController) : Vie
     fod.filterExtensions = arrayOf("*.pblog")
     return fod.open()
   }
-
-  fun showErrorMessage(msg: String) {
-
-  }
 }
 
-class FileMenuController @Inject constructor(val ctx: Context) {
+class FileMenuController @Inject constructor(val ctx: Context, val errors: ErrorDialog) {
   @Inject lateinit var view: FileMenuView
   fun saveBlog() {
     var path = ctx.blogPath
@@ -112,10 +139,14 @@ class FileMenuController @Inject constructor(val ctx: Context) {
     try {
       blog = loadBlog(path)
     } catch (e: BlogLoadException) {
-      view.showErrorMessage(e.message ?: "Unknown error")
+      errors.show(e.message ?: "Unknown error")
       return
     }
     ctx.openBlog(loadBlog(path), path)
+  }
+
+  fun newPost() {
+    throw UnsupportedOperationException("not implemented")
   }
 
   fun quit() {
@@ -123,17 +154,19 @@ class FileMenuController @Inject constructor(val ctx: Context) {
   }
 }
 
-class MainMenu(val shell: Shell, val ctx: Context) {
+class MainMenu @Inject constructor(
+  val shell: Shell,
+  val files: FileMenuView,
+) {
   init {
+    val menu = Menu(shell, SWT.BAR)
+    shell.menuBar = menu
+    files.parent = shell
   }
-}
-
-fun buildMenu(menubar: Menu, shell: Shell) {
 }
 
 class PostEditView(val ctx: Context, val parent: Composite) {
   val view = Composite(parent, SWT.NONE)
-  //val sourcePane =
   init {
 
   }
@@ -148,7 +181,11 @@ class EditView(val ctx: Context, val parent: Composite) {
   }
 }
 
-class MainGui @Inject constructor(val ctx: Context, val display: Display) : ShellAdapter() {
+class MainGui @Inject constructor(
+    val ctx: Context,
+    val display: Display,
+    val mainMenu: MainMenu
+  ) : ShellAdapter() {
   //val display = Display()
   val shell = Shell(display)
 
@@ -159,7 +196,7 @@ class MainGui @Inject constructor(val ctx: Context, val display: Display) : Shel
     val menubar = Menu(shell, SWT.BAR)
     shell.menuBar = menubar
 
-    buildMenu(menubar, shell)
+    //buildMenu(menubar, shell)
 
 
     val sash = SashForm(shell, SWT.HORIZONTAL)

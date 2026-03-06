@@ -4,6 +4,7 @@ import java.time.*
 import java.io.*
 import java.net.URLConnection
 import org.apache.commons.io.IOUtils
+import jakarta.persistence.*
 
 class BlogLoadException (msg: String): Exception(msg)
 
@@ -43,12 +44,14 @@ fun loadBlog(path: String): Blog {
   throw BlogLoadException("not yet implemented")
 }
 
+@Entity
 class Blog {
-  var name = "My Blog"
-  var baseURL = "https://my-blog.invalid"
-  var author = "My Own Self"
-  var staticFiles: List<StaticFile> = ArrayList()
-  var theme = defaultTheme()
+  @Id @GeneratedValue var id: Int = 0
+  @Column var name = "My Blog"
+  @Column var baseURL = "https://my-blog.invalid"
+  @Column var author = "My Own Self"
+  @Column var staticFiles: List<StaticFile> = ArrayList()
+  @Column var theme = defaultTheme()
   val posts: MutableList<Post> = ArrayList()
 
   fun resource(name: String): StaticFile? {
@@ -75,28 +78,48 @@ enum class PostStatus {
   DRAFT
 }
 
+fun now(): ZonedDateTime = ZonedDateTime.ofInstant(
+  Clock.systemDefaultZone().instant(),
+  Clock.systemDefaultZone().zone)
+
+@Entity
 class Post {
-  var type = PostType.BLOGPOST
-  var status = PostStatus.DRAFT
-  var title = "A Very Good Post"
-  var url = ""
-  var publishDate = Clock.systemDefaultZone().instant()
-  var bodyType = BodyType.MARKDOWN
-  var body = "This is my post, and I am proud of it"
+  @Id @GeneratedValue var id: Int = 0
+
+  @Column var type = PostType.BLOGPOST
+  @Column var status = PostStatus.DRAFT
+  @Column var title = "A Very Good Post"
+  @Column var url = ""
+  @Column var publishDate = now()
+  @Column var bodyType = BodyType.MARKDOWN
+  @Column var body = "This is my post, and I am proud of it"
+
+  @OneToMany var theme: Theme? = null
+  @OneToMany var blog: Blog? = null
 }
 
+enum class FileUsage {
+  PUBLISH,
+  TEMPLATE,
+}
+
+@Entity
 class StaticFile {
-  var path = "static/newfile"
-  var data = ByteArray(0)
-  var mimeType = "application/octet-stream"
-  var publishDate = Clock.systemDefaultZone().instant()
+  @Id @GeneratedValue var id: Int = 0
+  @Column var usage = FileUsage.PUBLISH
+  @Column var path = "static/newfile"
+  @Column var data = ByteArray(0)
+  @Column var mimeType = "application/octet-stream"
+  @Column var publishDate = now()
 
   fun asString(): String? {
     return null
   }
 }
 
+@Entity
 class Theme {
+  @Id @GeneratedValue var id: Int = 0
   var name = "Custom theme"
   var files: MutableList<StaticFile> = ArrayList()
 }
