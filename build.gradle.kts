@@ -7,6 +7,7 @@
 plugins {
   alias(libs.plugins.kotlin.jvm)
   application
+  //kotlin("jvm") version "2.3.10"
 }
 
 repositories {
@@ -37,6 +38,12 @@ application {
 tasks.named<Test>("test") {
   useJUnitPlatform()
 }
-tasks.withType<org.gradle.jvm.tasks.Jar>() {
-    exclude("META-INF/ECLIPSE_.RSA", "META-INF/ECLIPSE_.SF", "META-INF/MANIFEST.MF")
+tasks.jar {
+  manifest {
+    attributes["Main-Class"] = "potatoblog.AppKt"
+  }
+  configurations["compileClasspath"].forEach { file: File ->
+    from(zipTree(file.absoluteFile))
+  }
+  duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }

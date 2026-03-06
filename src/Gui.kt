@@ -8,12 +8,12 @@ import org.eclipse.swt.events.*
 import org.eclipse.swt.layout.*
 import org.eclipse.swt.widgets.*
 import com.google.common.eventbus.EventBus
-import jakarta.inject.Inject
+import jakarta.inject.*
 
 abstract class View<TComposite> where TComposite : Widget {
   lateinit var self: TComposite
 
-  var parent: Composite? = null
+  var parent: Widget? = null
   set(value) {
     field = value
     build()
@@ -22,6 +22,7 @@ abstract class View<TComposite> where TComposite : Widget {
   abstract fun build()
 }
 
+@Singleton
 class ErrorDialog @Inject constructor(val display: Display) {
   val self = Shell(display, SWT.APPLICATION_MODAL)
   val label = Label(self, SWT.NONE)
@@ -39,6 +40,7 @@ class ErrorDialog @Inject constructor(val display: Display) {
   }
 }
 
+@Singleton
 class Swapper(val parent: Composite, val widgets: List<Composite>) {
   val self = Composite(parent, SWT.NONE)
   init {
@@ -65,11 +67,13 @@ class Swapper(val parent: Composite, val widgets: List<Composite>) {
 }
 
 fun ctrl(c: Char): Int {
-  return SWT.MOD1 or (c as Int)
+  return SWT.MOD1 or c.toInt()
 }
 
+@Singleton
 class FileMenuView @Inject constructor(val controller: FileMenuController) : View<Menu>() {
   override fun build() {
+    controller.view = this
     val parentMenu = parent as Menu
     val fileItem = MenuItem(parentMenu, SWT.CASCADE)
     val fileMenu = Menu(parentMenu)
@@ -116,8 +120,9 @@ class FileMenuView @Inject constructor(val controller: FileMenuController) : Vie
   }
 }
 
+@Singleton
 class FileMenuController @Inject constructor(val ctx: Context, val errors: ErrorDialog) {
-  @Inject lateinit var view: FileMenuView
+  lateinit var view: FileMenuView
   fun saveBlog() {
     var path = ctx.blogPath
     val blog = ctx.blog
@@ -154,14 +159,16 @@ class FileMenuController @Inject constructor(val ctx: Context, val errors: Error
   }
 }
 
+@Singleton
 class MainMenu @Inject constructor(
   val shell: Shell,
   val files: FileMenuView,
 ) {
   init {
+    println("MainMenu")
     val menu = Menu(shell, SWT.BAR)
     shell.menuBar = menu
-    files.parent = shell
+    files.parent = menu
   }
 }
 
@@ -183,13 +190,12 @@ class EditView(val ctx: Context, val parent: Composite) {
 
 class MainGui @Inject constructor(
     val ctx: Context,
+    val shell: Shell,
     val display: Display,
     val mainMenu: MainMenu
   ) : ShellAdapter() {
-  //val display = Display()
-  val shell = Shell(display)
-
   init {
+    println("MainGui")
     shell.text = "PotatoBlog"
     val grid = GridLayout(1, false)
     shell.layout = grid
