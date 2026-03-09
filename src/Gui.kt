@@ -17,6 +17,10 @@ abstract class View<TComposite> where TComposite : Widget {
   set(value) {
     field = value
     build()
+    val s = self
+    if (s is Control) {
+      s.pack()
+    }
   }
 
   abstract fun build()
@@ -71,7 +75,10 @@ fun ctrl(c: Char): Int {
 }
 
 @Singleton
-class FileMenuView @Inject constructor(val controller: FileMenuController) : View<Menu>() {
+class FileMenuView @Inject constructor(
+  val controller: FileMenuController,
+  val shell: Shell
+) : View<Menu>() {
   override fun build() {
     controller.view = this
     val parentMenu = parent as Menu
@@ -84,7 +91,6 @@ class FileMenuView @Inject constructor(val controller: FileMenuController) : Vie
     val newItem = MenuItem(fileMenu, SWT.PUSH)
     newItem.text = "New &Blog"
     newItem.addListener(SWT.Selection, {e -> controller.newBlog()})
-    // no accelerator because you shouldn't be doing this often
 
     val newPostItem = MenuItem(fileMenu, SWT.PUSH)
     newPostItem.text = "&New Post/Page"
@@ -108,13 +114,13 @@ class FileMenuView @Inject constructor(val controller: FileMenuController) : Vie
   }
 
   fun getSavePath(): String? {
-    val fod = FileDialog(parent as Shell, SWT.SAVE)
+    val fod = FileDialog(shell, SWT.SAVE)
     fod.filterExtensions = arrayOf("*.pblog")
     return fod.open()
   }
 
   fun getOpenPath(): String? {
-    val fod = FileDialog(parent as Shell, SWT.OPEN)
+    val fod = FileDialog(shell, SWT.OPEN)
     fod.filterExtensions = arrayOf("*.pblog")
     return fod.open()
   }
@@ -277,8 +283,6 @@ class MainGui @Inject constructor(
     shell.text = "PotatoBlog"
     val grid = GridLayout(1, false)
     shell.layout = grid
-    val menubar = Menu(shell, SWT.BAR)
-    shell.menuBar = menubar
 
     //buildMenu(menubar, shell)
 

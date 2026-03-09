@@ -31,6 +31,10 @@ java.sourceSets["main"].kotlin {
   srcDir("src")
 }
 
+java.sourceSets["main"].resources {
+  srcDir("resources")
+}
+
 application {
   mainClass = "potatoblog.AppKt"
 }
