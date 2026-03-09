@@ -216,12 +216,14 @@ class BlogTreeView @Inject constructor(val controller: BlogTreeController): View
     if (p == path) {
       // root level item
       val it = TreeItem(self, 0)
+      it.expanded = true
       it.text = basename(p)
       pathToItem[p] = it
       return it
     }
     val parent = item(p)
     val it = TreeItem(parent, 0)
+    it.expanded = true
     it.text = basename(path)
     pathToItem[path] = it
     return it
