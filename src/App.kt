@@ -16,7 +16,6 @@ class MatchAll() : Matcher<Any> {
 class BusListener(val bus: EventBus) : ProvisionListener {
   override fun <T: Any> onProvision(it: ProvisionListener.ProvisionInvocation<T>) {
     val s = it.provision()
-    println("event registry: " + s)
     bus.register(s)
   }
 }

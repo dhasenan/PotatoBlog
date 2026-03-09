@@ -139,7 +139,7 @@ class FileMenuController @Inject constructor(val ctx: Context, val errors: Error
   fun newBlog() {
     // TODO check if there's an open blog already, prompt to save
     val path = view.getSavePath()
-    if (path != null) ctx.openBlog(Blog(), path)
+    if (path != null) ctx.openBlog(defaultBlog(), path)
   }
 
   fun openBlog() {
@@ -171,7 +171,6 @@ class MainMenu @Inject constructor(
   val files: FileMenuView,
 ) {
   init {
-    println("MainMenu")
     val menu = Menu(shell, SWT.BAR)
     shell.menuBar = menu
     files.parent = menu
@@ -203,7 +202,9 @@ class BlogTreeView @Inject constructor(val controller: BlogTreeController): View
     c.layout = GridLayout(1, false)
     val header = Label(c, SWT.HORIZONTAL)
     header.text = "Blog!"
-    self = Tree(c, SWT.MULTI)
+    header.pack()
+    self = Tree(c, SWT.MULTI.or(SWT.BORDER))
+    self.layoutData = GridData(GridData.FILL_HORIZONTAL.or(GridData.FILL_VERTICAL))
     self.clearAll(true)
   }
 
@@ -276,10 +277,10 @@ class MainGui @Inject constructor(
     val ctx: Context,
     val shell: Shell,
     val display: Display,
-    val mainMenu: MainMenu
+    val mainMenu: MainMenu,
+    val fileTree: BlogTreeView,
   ) : ShellAdapter() {
   init {
-    println("MainGui")
     shell.text = "PotatoBlog"
     val grid = GridLayout(1, false)
     shell.layout = grid
@@ -289,7 +290,8 @@ class MainGui @Inject constructor(
 
     val sash = SashForm(shell, SWT.HORIZONTAL)
     sash.layoutData = GridData(SWT.FILL, SWT.FILL, true, true)
-    val fileTree = Tree(sash, SWT.SINGLE)
+    fileTree.parent = sash
+    //val fileTree = Tree(sash, SWT.SINGLE)
     val editor = StyledText(sash, SWT.WRAP or SWT.FILL)
     val preview = Browser(sash, SWT.FILL)
     preview.url = "https://example.org"

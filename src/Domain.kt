@@ -12,6 +12,7 @@ fun defaultBlog(): Blog {
   val blog = Blog()
   val firstPost = Post()
   firstPost.status = PostStatus.PUBLISHED
+  firstPost.path = "/posts/first.html"
   blog.posts.add(firstPost)
   val aboutMe = Post()
   aboutMe.type = PostType.PAGE
