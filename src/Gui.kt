@@ -26,7 +26,11 @@ abstract class View<TComposite> where TComposite : Widget {
   abstract fun build()
 }
 
-class NewPostPopup @Inject constructor(val display: Display, val bus: EventBus) {
+class NewPostPopup @Inject constructor(
+  val display: Display,
+  val bus: EventBus,
+  val ctx: Context
+) {
   // - path
   // - markdown vs HTML
   // - post vs page
@@ -76,6 +80,7 @@ class NewPostPopup @Inject constructor(val display: Display, val bus: EventBus) 
     post.bodyType = btd[formatSelect.selectionIndex]
     val ptd = typeSelect.data as List<PostType>
     post.type = ptd[typeSelect.selectionIndex]
+    ctx.blog!!.posts.add(post)
     bus.post(FileAdded(post))
     bus.post(FileOpened(post))
     self.close()
@@ -220,12 +225,12 @@ class FileMenuController @Inject constructor(
     if (path == null) return;
     var blog: Blog? = null
     try {
-      blog = loadBlog(path)
+      blog = persist.load(path)
     } catch (e: BlogLoadException) {
       errors.show(e.message ?: "Unknown error")
       return
     }
-    ctx.openBlog(loadBlog(path), path)
+    ctx.openBlog(blog, path)
   }
 
   fun newPost() {

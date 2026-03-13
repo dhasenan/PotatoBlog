@@ -33,6 +33,7 @@ class PotatoModule : AbstractModule() {
   }
 }
 
+@Singleton
 class Context @Inject constructor(val eventBus: EventBus) {
   var blog: Blog? = null
     private set

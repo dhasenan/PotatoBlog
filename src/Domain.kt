@@ -56,25 +56,16 @@ fun defaultTheme(): Theme {
   return theme
 }
 
-fun loadBlog(path: String): Blog {
-  throw BlogLoadException("not yet implemented")
-}
-
 class Blog {
   var name = "My Blog"
   var baseURL = "https://my-blog.invalid"
   var author = "My Own Self"
-  var staticFiles: List<StaticFile> = ArrayList()
+  var staticFiles = java.util.ArrayList<StaticFile>()
   @JsonIgnore var theme = defaultTheme()
-  val posts: MutableList<Post> = ArrayList()
+  var posts = java.util.ArrayList<Post>()
 
   fun resource(name: String): StaticFile? {
     return null;
-  }
-
-  fun save(path: String) {
-    // TODO
-
   }
 }
 
@@ -143,7 +134,7 @@ class StaticFile: BlogFile {
 
 class Theme {
   var name = "Custom theme"
-  @JsonIgnore var files: MutableList<StaticFile> = ArrayList()
+  var files = java.util.ArrayList<StaticFile>()
 }
 
 fun pathParent(p: String): String {

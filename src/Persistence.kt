@@ -17,14 +17,15 @@ class Persist {
 
   fun save(blog: Blog, path: String) {
     val zip = ZipOutputStream(FileOutputStream(path))
-    writeEntry(zip, BLOG_DATA_PATH, mapper.writeValueAsBytes(blog)) 
+    writeEntry(zip, BLOG_DATA_PATH, mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(blog)) 
     for (f in blog.posts) {
       writeEntry(zip, "blog/" + f.path, StandardCharsets.UTF_8.encode(f.body).array())
     }
     for (f in blog.staticFiles) {
       writeEntry(zip, "blog/" + f.path, f.data)
     }
-    writeEntry(zip, THEME_DATA_PATH, mapper.writeValueAsBytes(blog.theme)) 
+    writeEntry(zip, THEME_DATA_PATH,
+    mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(blog.theme)) 
     for (f in blog.theme.files) {
       writeEntry(zip, "theme/" + f.path, f.data)
     }
@@ -37,7 +38,7 @@ class Persist {
     val blog = readXml<Blog>(zf, BLOG_DATA_PATH, Blog::class)
     blog.theme = readXml(zf, THEME_DATA_PATH, Theme::class)
     for (f in blog.posts) {
-      f.body = readString(zf, "blog/" + f)
+      f.body = readString(zf, "blog/" + f.path)
     }
     for (f in blog.staticFiles) {
       f.data = readBytes(zf, "blog/" + f.path)
@@ -61,6 +62,9 @@ class Persist {
 
   private fun readString(zf: ZipFile, path: String): String {
     val entry = zf.getEntry(path)
+    if (entry == null) {
+      throw Exception("missing zip entry: ${path}")
+    }
     val istream = zf.getInputStream(entry)
     try {
       return IOUtils.toString(istream, StandardCharsets.UTF_8)
