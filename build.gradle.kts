@@ -21,6 +21,7 @@ dependencies {
   implementation("commons-io:commons-io:2.19.0")
   implementation("org.commonmark:commonmark:0.27.1")
   implementation("tools.jackson.dataformat:jackson-dataformat-xml:3.1.0")
+  implementation("org.reflections:reflections:0.10.2")
 
   // TODO pick right version for the current platform
   implementation(files("lib/swt-linux-x64.jar"))

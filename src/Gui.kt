@@ -127,13 +127,17 @@ class FileMenuView @Inject constructor(
 }
 
 @Singleton
-class FileMenuController @Inject constructor(val ctx: Context, val errors: ErrorDialog) {
+class FileMenuController @Inject constructor(
+  val ctx: Context,
+  val errors: ErrorDialog,
+  val persist: Persist,
+) {
   lateinit var view: FileMenuView
   fun saveBlog() {
     var path = ctx.blogPath
     val blog = ctx.blog
     if (path == null || blog == null) return
-    blog.save(path)
+    persist.save(blog, path)
   }
 
   fun newBlog() {
@@ -193,7 +197,7 @@ class EditView(val ctx: Context, val parent: Composite) {
   }
 }
 
-class BlogTreeView @Inject constructor(val controller: BlogTreeController): View<Tree>() {
+class BlogTreeView @Inject constructor(val bus: EventBus): View<Tree>() {
   val pathToItem = mutableMapOf<String, TreeItem>()
   var blog: Blog? = null
 
@@ -215,18 +219,24 @@ class BlogTreeView @Inject constructor(val controller: BlogTreeController): View
     val p = pathParent(path)
     if (p == path) {
       // root level item
-      val it = TreeItem(self, 0)
-      it.expanded = true
-      it.text = basename(p)
-      pathToItem[p] = it
-      return it
+      val ti = TreeItem(self, 0)
+      ti.expanded = true
+      ti.text = basename(p)
+      pathToItem[p] = ti
+      return ti
     }
     val parent = item(p)
-    val it = TreeItem(parent, 0)
-    it.expanded = true
-    it.text = basename(path)
-    pathToItem[path] = it
-    return it
+    val ti = TreeItem(parent, 0)
+    ti.expanded = true
+    ti.text = basename(path)
+    pathToItem[path] = ti
+    ti.addListener(SWT.Activate, { evt -> 
+      val data = ti.data
+      if (data is BlogFile) {
+        bus.post(FileOpened(data))
+      }
+    })
+    return ti
   }
 
   @Subscribe

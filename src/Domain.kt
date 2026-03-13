@@ -5,6 +5,8 @@ import java.io.*
 import java.net.URLConnection
 import org.apache.commons.io.IOUtils
 import com.fasterxml.jackson.annotation.JsonIgnore
+import org.reflections.*
+import org.reflections.scanners.Scanners.*
 
 class BlogLoadException (msg: String): Exception(msg)
 
@@ -23,19 +25,33 @@ fun defaultBlog(): Blog {
   return blog
 }
 
-const val DEFAULT_THEME_NAME = "defaultTheme"
 fun defaultTheme(): Theme {
-  val cl = Blog::class.java.classLoader
-  val lister = BufferedReader(InputStreamReader(cl.getResourceAsStream(DEFAULT_THEME_NAME)))
+  val prefix = "potatoblog/defaultTheme/"
   val theme = Theme()
   theme.name = "Default Theme"
-  while (true) {
-    val resourceName = lister.readLine()
-    if (resourceName == null) break
-    val sf = StaticFile()
-    sf.data = IOUtils.toByteArray(cl.getResourceAsStream(resourceName))
-    sf.path = resourceName.substring(DEFAULT_THEME_NAME.length)
-    theme.files.add(sf)
+  // This should be built into Java. Alas.
+  val reflections = org.reflections.Reflections(org.reflections.util.ConfigurationBuilder()
+    .forPackage("potatoblog")
+    .addScanners(org.reflections.scanners.Scanners.Resources)
+    .addClassLoaders(Blog::class.java.classLoader))
+  // These filenames are full resource paths
+  val filenames = reflections.getAll(org.reflections.scanners.Scanners.Resources)
+  for (filename in filenames) {
+    if (filename.indexOf(prefix) < 0) {
+      continue
+    }
+    // The files are stored at potatoblog/defaultTheme/whatever
+    // I need to strip off the first two path components
+    val name = filename.substring(prefix.length, filename.length)
+    val file = StaticFile()
+    file.path = name
+
+    // Guava needs the resource path relative to the directory containing the class I give it.
+    // This is, needless to say, annoying.
+    val resourceName = "defaultTheme/" + name
+    val uri = com.google.common.io.Resources.getResource(Blog::class.java, resourceName)
+    file.data = com.google.common.io.Resources.toByteArray(uri)
+    theme.files.add(file)
   }
   return theme
 }

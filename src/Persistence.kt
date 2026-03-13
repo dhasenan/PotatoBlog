@@ -13,11 +13,6 @@ val THEME_DATA_PATH = "theme.xml"
 class Persist {
   val mapper = XmlMapper()
 
-  fun writeEntry(zip: ZipOutputStream, path: String, data: ByteArray) {
-    zip.putNextEntry(ZipEntry(path))
-    zip.write(data, 0, data.size)
-  }
-
   fun save(blog: Blog, path: String) {
     val zip = ZipOutputStream(FileOutputStream(path))
     writeEntry(zip, BLOG_DATA_PATH, mapper.writeValueAsBytes(blog)) 
@@ -35,36 +30,6 @@ class Persist {
     zip.close()
   }
 
-  fun <T : Any> readXml(zf: ZipFile, path: String, clazz: KClass<T>): T {
-    val entry = zf.getEntry(path)
-    val istream = zf.getInputStream(entry)
-    try {
-      return mapper.readerFor(clazz.java).readValue(istream)
-    } finally {
-      istream.close()
-    }
-  }
-
-  fun readString(zf: ZipFile, path: String): String {
-    val entry = zf.getEntry(path)
-    val istream = zf.getInputStream(entry)
-    try {
-      return IOUtils.toString(istream, StandardCharsets.UTF_8)
-    } finally {
-      istream.close()
-    }
-  }
-
-  fun readBytes(zf: ZipFile, path: String): ByteArray {
-    val entry = zf.getEntry(path)
-    val istream = zf.getInputStream(entry)
-    try {
-      return IOUtils.toByteArray(istream)
-    } finally {
-      istream.close()
-    }
-  }
-
   fun load(path: String): Blog {
     val zf = ZipFile(path)
     val blog = readXml<Blog>(zf, BLOG_DATA_PATH, Blog::class)
@@ -80,6 +45,41 @@ class Persist {
     }
     zf.close()
     return blog
+  }
+
+  private fun <T : Any> readXml(zf: ZipFile, path: String, clazz: KClass<T>): T {
+    val entry = zf.getEntry(path)
+    val istream = zf.getInputStream(entry)
+    try {
+      return mapper.readerFor(clazz.java).readValue(istream)
+    } finally {
+      istream.close()
+    }
+  }
+
+  private fun readString(zf: ZipFile, path: String): String {
+    val entry = zf.getEntry(path)
+    val istream = zf.getInputStream(entry)
+    try {
+      return IOUtils.toString(istream, StandardCharsets.UTF_8)
+    } finally {
+      istream.close()
+    }
+  }
+
+  private fun readBytes(zf: ZipFile, path: String): ByteArray {
+    val entry = zf.getEntry(path)
+    val istream = zf.getInputStream(entry)
+    try {
+      return IOUtils.toByteArray(istream)
+    } finally {
+      istream.close()
+    }
+  }
+
+  private fun writeEntry(zip: ZipOutputStream, path: String, data: ByteArray) {
+    zip.putNextEntry(ZipEntry(path))
+    zip.write(data, 0, data.size)
   }
 }
 
