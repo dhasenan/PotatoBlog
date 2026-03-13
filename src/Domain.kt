@@ -151,7 +151,7 @@ fun pathParent(p: String): String {
   if (s <= 0) {
     return p
   }
-  return p.subSequence(0, s - 1).toString()
+  return p.subSequence(0, s).toString()
 }
 
 fun basename(p: String): String {
