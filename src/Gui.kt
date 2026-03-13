@@ -5,10 +5,12 @@ import org.eclipse.swt.*
 import org.eclipse.swt.browser.*
 import org.eclipse.swt.custom.*
 import org.eclipse.swt.events.*
+import org.eclipse.swt.graphics.*
 import org.eclipse.swt.layout.*
 import org.eclipse.swt.widgets.*
 import com.google.common.eventbus.EventBus
 import jakarta.inject.*
+import java.util.Timer
 
 abstract class View<TComposite> where TComposite : Widget {
   lateinit var self: TComposite
@@ -187,13 +189,13 @@ class FileMenuView @Inject constructor(
 
   fun getSavePath(): String? {
     val fod = FileDialog(shell, SWT.SAVE)
-    fod.filterExtensions = arrayOf("*.pblog")
+    fod.setFilterExtensions(arrayOf("*.pblog"))
     return fod.open()
   }
 
   fun getOpenPath(): String? {
     val fod = FileDialog(shell, SWT.OPEN)
-    fod.filterExtensions = arrayOf("*.pblog")
+    fod.setFilterExtensions(arrayOf("*.pblog"))
     return fod.open()
   }
 }
@@ -203,13 +205,15 @@ class FileMenuController @Inject constructor(
   val ctx: Context,
   val errors: ErrorDialog,
   val persist: Persist,
-  val newPostPopup: NewPostPopup
+  val newPostPopup: NewPostPopup,
+  val bus: EventBus,
 ) {
   lateinit var view: FileMenuView
   fun saveBlog() {
     var path = ctx.blogPath
     val blog = ctx.blog
     if (path == null || blog == null) return
+    bus.post(BeforeSave())
     persist.save(blog, path)
   }
 
@@ -254,19 +258,56 @@ class MainMenu @Inject constructor(
   }
 }
 
-class PostEditView(val ctx: Context, val parent: Composite) {
-  val view = Composite(parent, SWT.NONE)
-  init {
+class PostInfoView @Inject constructor(val ctx: Context): View<Composite>() {
+  var post: Post? = null
 
+  override fun build() {
+    self = Composite(parent as Composite, SWT.FILL)
+    self.layoutData = GridData(GridData.FILL_HORIZONTAL)
+    self.layout = GridLayout(2, true)
+
+  }
+
+  @Subscribe
+  fun fileOpened(f: FileOpened) {
   }
 }
 
-class EditView(val ctx: Context, val parent: Composite) {
-  val view = Composite(parent, SWT.NONE)
-  val postEdit = PostEditView(ctx, view)
-  init {
-    view.setLayout(GridLayout(1, true))
-    postEdit.view.layoutData = GridData(SWT.FILL, SWT.FILL, true, true)
+class EditView @Inject constructor(
+  val ctx: Context,
+  val infoView: PostInfoView,
+  val display: Display
+): View<Composite>() {
+  lateinit var bodyEdit: StyledText
+  var post: Post? = null
+
+  override fun build() {
+    self = Composite(parent as Composite, SWT.FILL)
+    self.setLayout(GridLayout(1, true))
+    infoView.parent = self
+    val fonts = display.getFontList("Monospace", true)
+    bodyEdit = StyledText(self, SWT.MULTI.or(SWT.V_SCROLL))
+    bodyEdit.layoutData = GridData(SWT.FILL, SWT.FILL, true, true)
+    bodyEdit.font = Font(display, fonts[0])
+  }
+
+  @Subscribe
+  fun beforeSave(evt: BeforeSave) {
+    val e = post
+    if (e == null) return
+    e.body = bodyEdit.text
+  }
+
+  @Subscribe
+  fun fileOpened(evt: FileOpened) {
+    val f = evt.file
+    if (f !is Post) {
+      return
+    }
+    post = f
+    infoView.post = f
+    bodyEdit.text = f.body
+    bodyEdit.editable = true
   }
 }
 
@@ -283,6 +324,35 @@ class BlogTreeView @Inject constructor(val bus: EventBus): View<Tree>() {
     self = Tree(c, SWT.MULTI.or(SWT.BORDER))
     self.layoutData = GridData(GridData.FILL_HORIZONTAL.or(GridData.FILL_VERTICAL))
     self.clearAll(true)
+    self.addMouseListener(object: MouseListener {
+      override fun mouseDoubleClick(evt: MouseEvent) {
+        activate(evt)
+      }
+      override fun mouseDown(evt: MouseEvent) {}
+      override fun mouseUp(evt: MouseEvent) {}
+    })
+  }
+
+  fun treeItemFromPoint(x: Int, y: Int, list: Array<TreeItem>): TreeItem? {
+    for (ti in list) {
+      if (ti.bounds.contains(x, y)) {
+        return ti
+      }
+      val child = treeItemFromPoint(x, y, ti.items)
+      if (child != null) return child
+    }
+    return null
+  }
+
+  fun activate(evt: MouseEvent) {
+    val ti = treeItemFromPoint(evt.x, evt.y, self.items)
+    if (ti == null) {
+      return
+    }
+    val data = ti.data
+    if (data is BlogFile) {
+      bus.post(FileOpened(data))
+    }
   }
 
   fun item(path: String): TreeItem {
@@ -303,12 +373,6 @@ class BlogTreeView @Inject constructor(val bus: EventBus): View<Tree>() {
     ti.expanded = true
     ti.text = basename(path)
     pathToItem[path] = ti
-    ti.addListener(SWT.Activate, { evt -> 
-      val data = ti.data
-      if (data is BlogFile) {
-        bus.post(FileOpened(data))
-      }
-    })
     return ti
   }
 
@@ -364,27 +428,28 @@ class MainGui @Inject constructor(
     val display: Display,
     val mainMenu: MainMenu,
     val fileTree: BlogTreeView,
+    val editView: EditView,
+    val persist: Persist,
   ) : ShellAdapter() {
   init {
     shell.text = "PotatoBlog"
     val grid = GridLayout(1, false)
     shell.layout = grid
-
-    //buildMenu(menubar, shell)
-
-
     val sash = SashForm(shell, SWT.HORIZONTAL)
     sash.layoutData = GridData(SWT.FILL, SWT.FILL, true, true)
     fileTree.parent = sash
-    //val fileTree = Tree(sash, SWT.SINGLE)
-    val editor = StyledText(sash, SWT.WRAP or SWT.FILL)
+    editView.parent = sash
     val preview = Browser(sash, SWT.FILL)
     preview.url = "https://example.org"
     sash.setWeights(1, 4, 4)
   }
 
-  fun run() {
+  fun run(args: Array<String>) {
     shell.open()
+    if (args.size == 1) {
+      val blog = persist.load(args[0])
+      ctx.openBlog(blog, args[0])
+    }
 
     while (!shell.isDisposed()) {
       if (!display.readAndDispatch()) {

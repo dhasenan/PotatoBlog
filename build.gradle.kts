@@ -7,7 +7,6 @@
 plugins {
   alias(libs.plugins.kotlin.jvm)
   application
-  //kotlin("jvm") version "2.3.10"
 }
 
 repositories {

@@ -51,5 +51,5 @@ class Context @Inject constructor(val eventBus: EventBus) {
 fun main(args: Array<String>) {
   val injector = Guice.createInjector(PotatoModule())
   val gui = injector.getInstance(MainGui::class.java)
-  gui.run()
+  gui.run(args)
 }
