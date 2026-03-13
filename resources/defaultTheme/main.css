@@ -30,8 +30,7 @@ body {
   * of the width, but will prefer to be smaller. The unit it's using
   * is 'em', which is the height of a line of text in the default
   * font. So if 90em is smaller than 95vw (the user can't fit ~90-100
-  * letters onto their screen at once), this will use up to 95% of the
-  * screen. */
+  * letters on a single line), this will use up to 95% of the screen. */
  /* width: min(95vw, 90em) */
 }
 
@@ -94,8 +93,8 @@ div.main {
 
 footer {
   /* Put it on row 3, column 2 */
-  grid-column: 2 / 3;
   grid-row: 3 / 4;
+  grid-column: 2 / 3;
   /* The footer has a smaller font */
   font-size: 80%;
 }

@@ -4,7 +4,7 @@ import java.time.*
 import java.io.*
 import java.net.URLConnection
 import org.apache.commons.io.IOUtils
-import jakarta.persistence.*
+import com.fasterxml.jackson.annotation.JsonIgnore
 
 class BlogLoadException (msg: String): Exception(msg)
 
@@ -33,7 +33,6 @@ fun defaultTheme(): Theme {
     val resourceName = lister.readLine()
     if (resourceName == null) break
     val sf = StaticFile()
-    sf.mimeType = URLConnection.guessContentTypeFromName(resourceName)
     sf.data = IOUtils.toByteArray(cl.getResourceAsStream(resourceName))
     sf.path = resourceName.substring(DEFAULT_THEME_NAME.length)
     theme.files.add(sf)
@@ -45,14 +44,12 @@ fun loadBlog(path: String): Blog {
   throw BlogLoadException("not yet implemented")
 }
 
-@Entity
 class Blog {
-  @Id @GeneratedValue var id: Int = 0
-  @Column var name = "My Blog"
-  @Column var baseURL = "https://my-blog.invalid"
-  @Column var author = "My Own Self"
-  @Column var staticFiles: List<StaticFile> = ArrayList()
-  @Column var theme = defaultTheme()
+  var name = "My Blog"
+  var baseURL = "https://my-blog.invalid"
+  var author = "My Own Self"
+  var staticFiles: List<StaticFile> = ArrayList()
+  @JsonIgnore var theme = defaultTheme()
   val posts: MutableList<Post> = ArrayList()
 
   fun resource(name: String): StaticFile? {
@@ -61,6 +58,7 @@ class Blog {
 
   fun save(path: String) {
     // TODO
+
   }
 }
 
@@ -88,20 +86,15 @@ interface BlogFile {
   val mimeType: String
 }
 
-@Entity
 class Post: BlogFile {
-  @Id @GeneratedValue var id: Int = 0
-
-  @Column var type = PostType.BLOGPOST
-  @Column var status = PostStatus.DRAFT
-  @Column var title = "A Very Good Post"
-  @Column override var path = ""
-  @Column var publishDate = now()
-  @Column var bodyType = BodyType.MARKDOWN
-  @Column var body = "This is my post, and I am proud of it"
-
-  @OneToMany var theme: Theme? = null
-  @OneToMany var blog: Blog? = null
+  var type = PostType.BLOGPOST
+  var status = PostStatus.DRAFT
+  var title = "A Very Good Post"
+  override var path = ""
+  var publishDate = now()
+  var bodyType = BodyType.MARKDOWN
+  @JsonIgnore
+  var body = "This is my post, and I am proud of it"
 
   override val mimeType: String
     get() {
@@ -117,25 +110,24 @@ enum class FileUsage {
   TEMPLATE,
 }
 
-@Entity
 class StaticFile: BlogFile {
-  @Id @GeneratedValue var id: Int = 0
-  @Column var usage = FileUsage.PUBLISH
-  @Column override var path = "static/newfile"
-  @Column var data = ByteArray(0)
-  @Column override var mimeType = "application/octet-stream"
-  @Column var publishDate = now()
+  var usage = FileUsage.PUBLISH
+  override var path = "static/newfile"
+  override val mimeType: String
+    @JsonIgnore get() {
+      return URLConnection.guessContentTypeFromName(path) ?: "application/octet-stream"
+    }
+  @JsonIgnore
+  var data = ByteArray(0)
 
   fun asString(): String? {
     return null
   }
 }
 
-@Entity
 class Theme {
-  @Id @GeneratedValue var id: Int = 0
   var name = "Custom theme"
-  var files: MutableList<StaticFile> = ArrayList()
+  @JsonIgnore var files: MutableList<StaticFile> = ArrayList()
 }
 
 fun pathParent(p: String): String {

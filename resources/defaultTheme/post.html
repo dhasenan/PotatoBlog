@@ -23,11 +23,11 @@
 </article>
 <div class="tags">
   <!--
-    tags is a list, so you can go through that list using {{#tags}}...{{/tags}}
+    tags is a list, so you can go through that list using {{#each post.tags}}...{{/each}}
     Anything between those two markers gets repeated for each tag in the list.
     The inside bit can access the variables on that given tag.
   -->
-  {{#post.tags}}
+  {{#each post.tags}}
     <a href="{{archiveURL}}">{{name}}</a>
-  {{/post.tags}}
+  {{/each}}
 </div>

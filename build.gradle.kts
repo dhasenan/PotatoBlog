@@ -19,9 +19,8 @@ dependencies {
   implementation("com.google.inject:guice:7.0.0")
   implementation("com.github.spullara.mustache.java:compiler:0.9.14")
   implementation("commons-io:commons-io:2.19.0")
-  implementation("org.hibernate.orm:hibernate-core:7.0.3.Final")
-  implementation("org.xerial:sqlite-jdbc:3.50.1.0")
-  implementation("jakarta.persistence:jakarta.persistence-api:3.2.0")
+  implementation("org.commonmark:commonmark:0.27.1")
+  implementation("tools.jackson.dataformat:jackson-dataformat-xml:3.1.0")
 
   // TODO pick right version for the current platform
   implementation(files("lib/swt-linux-x64.jar"))
