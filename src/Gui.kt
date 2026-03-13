@@ -26,9 +26,72 @@ abstract class View<TComposite> where TComposite : Widget {
   abstract fun build()
 }
 
+class NewPostPopup @Inject constructor(val display: Display, val bus: EventBus) {
+  // - path
+  // - markdown vs HTML
+  // - post vs page
+  val self = Shell(display, SWT.APPLICATION_MODAL.or(SWT.DIALOG_TRIM))
+  val pathLabel = Label(self, 0)
+  val pathEntry = Text(self, SWT.SINGLE)
+  val formatLabel = Label(self, 0)
+  val formatSelect = Combo(self, SWT.DROP_DOWN.or(SWT.READ_ONLY))
+  val typeLabel = Label(self, 0)
+  val typeSelect = Combo(self, SWT.DROP_DOWN.or(SWT.READ_ONLY))
+  val buttonContainer = Composite(self, 0)
+  val ok = Button(buttonContainer, SWT.RIGHT)
+  val cancel = Button(buttonContainer, SWT.RIGHT)
+  init {
+    self.layout = GridLayout(2, true)
+    val buttonContainerLayout = RowLayout()
+    buttonContainerLayout.pack = true
+    buttonContainer.layout = buttonContainerLayout
+
+    pathLabel.text = "&Path"
+    pathLabel.layoutData = GridData(SWT.LEFT, SWT.FILL, false, false)
+    pathEntry.layoutData = GridData(SWT.FILL, SWT.FILL, true, false)
+    pathEntry.addModifyListener({
+      ok.enabled = (pathEntry.text.length > 0)
+    })
+    formatLabel.text = "Format"
+    formatLabel.layoutData = GridData(SWT.LEFT, SWT.FILL, false, false)
+    formatSelect.layoutData = GridData(SWT.FILL, SWT.FILL, true, false)
+    formatSelect.setItems("Markdown", "HTML")
+    formatSelect.data = listOf(BodyType.MARKDOWN, BodyType.HTML)
+    typeLabel.text = "Type"
+    typeLabel.layoutData = GridData(SWT.LEFT, SWT.FILL, false, false)
+    typeSelect.layoutData = GridData(SWT.FILL, SWT.FILL, true, false)
+    typeSelect.setItems("Post", "Page")
+    typeSelect.data = listOf(PostType.BLOGPOST, PostType.PAGE)
+    buttonContainer.layoutData = GridData(SWT.FILL, SWT.FILL, true, false, 2, 1)
+    ok.text = "&Ok"
+    ok.addListener(SWT.Selection, {evt -> okClicked() })
+    cancel.text = "&Cancel"
+    cancel.addListener(SWT.Selection, {evt -> self.close() })
+  }
+
+  fun okClicked() {
+    val post = Post()
+    post.path = pathEntry.text
+    val btd = formatSelect.data as List<BodyType>
+    post.bodyType = btd[formatSelect.selectionIndex]
+    val ptd = typeSelect.data as List<PostType>
+    post.type = ptd[typeSelect.selectionIndex]
+    bus.post(FileAdded(post))
+    bus.post(FileOpened(post))
+    self.close()
+  }
+
+  fun show() {
+    typeSelect.select(0)
+    pathEntry.text = ""
+    ok.enabled = false
+    self.open()
+  }
+}
+
 @Singleton
 class ErrorDialog @Inject constructor(val display: Display) {
-  val self = Shell(display, SWT.APPLICATION_MODAL)
+  val self = Shell(display, SWT.APPLICATION_MODAL.or(SWT.DIALOG_TRIM))
   val label = Label(self, SWT.NONE)
   val okButton = Button(self, SWT.PUSH)
   init {
@@ -77,7 +140,8 @@ fun ctrl(c: Char): Int {
 @Singleton
 class FileMenuView @Inject constructor(
   val controller: FileMenuController,
-  val shell: Shell
+  val shell: Shell,
+  val injector: com.google.inject.Injector
 ) : View<Menu>() {
   override fun build() {
     controller.view = this
@@ -94,7 +158,10 @@ class FileMenuView @Inject constructor(
 
     val newPostItem = MenuItem(fileMenu, SWT.PUSH)
     newPostItem.text = "&New Post/Page"
-    newPostItem.addListener(SWT.Selection, {e -> controller.newPost()})
+    newPostItem.addListener(SWT.Selection, {e ->
+      val newPost = injector.getInstance(NewPostPopup::class.java)
+      newPost.show()
+    })
     newPostItem.accelerator = ctrl('n')
 
     val openItem = MenuItem(fileMenu, SWT.PUSH)
@@ -131,6 +198,7 @@ class FileMenuController @Inject constructor(
   val ctx: Context,
   val errors: ErrorDialog,
   val persist: Persist,
+  val newPostPopup: NewPostPopup
 ) {
   lateinit var view: FileMenuView
   fun saveBlog() {
@@ -161,7 +229,7 @@ class FileMenuController @Inject constructor(
   }
 
   fun newPost() {
-    throw UnsupportedOperationException("not implemented")
+    newPostPopup.show()
   }
 
   fun quit() {

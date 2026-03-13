@@ -1,5 +1,6 @@
 package potatoblog
 
+import jakarta.inject.*
 import java.io.FileOutputStream
 import java.nio.charset.StandardCharsets
 import java.util.zip.*
@@ -10,6 +11,7 @@ import tools.jackson.dataformat.xml.*
 val BLOG_DATA_PATH = "blog.xml"
 val THEME_DATA_PATH = "theme.xml"
 
+@Singleton
 class Persist {
   val mapper = XmlMapper()
 
