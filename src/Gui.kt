@@ -258,18 +258,108 @@ class MainMenu @Inject constructor(
   }
 }
 
-class PostInfoView @Inject constructor(val ctx: Context): View<Composite>() {
+class PostInfoView @Inject constructor(
+  val ctx: Context,
+  val display: Display,
+): View<Composite>() {
   var post: Post? = null
+  lateinit var title: Text
+  lateinit var path: Text
+  lateinit var postType: Combo
+  lateinit var publicationStatus: Button
+  lateinit var publishDate: DateTime
+  lateinit var publishTime: DateTime
+  lateinit var expander: ExpandItem
+  lateinit var expandBar: ExpandBar
 
   override fun build() {
-    self = Composite(parent as Composite, SWT.FILL)
+    expandBar = ExpandBar(parent as Composite, SWT.V_SCROLL)
+    expandBar.layout = FillLayout()
+    expandBar.background
+    self = Composite(expandBar, SWT.FILL)
     self.layoutData = GridData(GridData.FILL_HORIZONTAL)
-    self.layout = GridLayout(2, true)
+    self.layout = GridLayout(2, false)
 
+    fun label(text: String) {
+      val label = Label(self, 0)
+      label.text = text
+      label.layoutData = GridData(SWT.LEFT, SWT.CENTER, false, false)
+    }
+
+    // title
+    label("Title")
+    title = Text(self, SWT.BORDER)
+    title.editable = true
+    title.layoutData = GridData(SWT.FILL, SWT.CENTER, true, false)
+    title.addListener(SWT.Selection, {println("publication status activate")})
+    // path
+    label("Path")
+    path = Text(self, SWT.BORDER)
+    path.editable = true
+    path.layoutData = GridData(SWT.FILL, SWT.CENTER, true, false)
+    path.addListener(SWT.Selection, {println("publication status activate")})
+    // type (post vs page)
+    label("Type")
+    postType = Combo(self, SWT.DROP_DOWN)
+    postType.setItems("Page", "Post")
+    postType.data = listOf(PostType.PAGE, PostType.BLOGPOST)
+    postType.layoutData = GridData(SWT.FILL, SWT.CENTER, true, false)
+    postType.addListener(SWT.Selection, {println("publication status activate")})
+    // publication status
+    publicationStatus = Button(self, SWT.CHECK)
+    publicationStatus.text = "Published"
+    publicationStatus.layoutData = GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1)
+    publicationStatus.addListener(SWT.Selection, {println("publication status activate")})
+
+    label("Publish Date")
+    val datePanel = Composite(self, 0)
+    datePanel.layoutData = GridData(SWT.LEFT, SWT.CENTER, false, false, 1, 1)
+    datePanel.layout = RowLayout()
+    // publication date
+    publishDate = DateTime(datePanel, SWT.DATE)
+    publishDate.addListener(SWT.Selection, {println("date activate")})
+    // publication time
+    publishTime = DateTime(datePanel, SWT.TIME)
+    publishTime.addListener(SWT.Selection, {println("date activate")})
+
+    self.pack()
+
+    expander = ExpandItem(expandBar, SWT.NONE, 0)
+    expander.expanded = true
+    expander.text = "Post details"
+    expander.control = self
+    expander.height = self.computeSize(SWT.DEFAULT, SWT.DEFAULT).y
+    expandBar.addExpandListener(object: ExpandListener {
+      override fun itemCollapsed(e: ExpandEvent) {
+        resized()
+      }
+      override fun itemExpanded(e: ExpandEvent) {
+        resized()
+      }
+    })
+  }
+
+  fun resized() {
+    display.asyncExec({
+      expander.height = self.computeSize(SWT.DEFAULT, SWT.DEFAULT).y
+      // this is... weird
+      // because it shrinks the StyledText widget to a single line
+      expandBar.requestLayout()
+    })
   }
 
   @Subscribe
   fun fileOpened(f: FileOpened) {
+    val file = f.file
+    if (file !is Post) return
+    this.post = file
+    title.text = file.title
+    path.text = file.path
+    postType.select(0)
+    publicationStatus.selection = file.status == PostStatus.PUBLISHED
+    val d = file.publishDate
+    publishDate.setDate(d.year, d.month.value - 1, d.dayOfMonth)
+    publishTime.setTime(d.hour, d.minute, d.second)
   }
 }
 
