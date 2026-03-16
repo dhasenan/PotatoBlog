@@ -534,39 +534,53 @@ class Preview @Inject constructor(
     self.addLocationListener(object: LocationListener {
       override fun changed(evt: LocationEvent) {}
       override fun changing(evt: LocationEvent) {
-        if (evt.location != "about:blank") evt.doit = false
       }
     })
     edit.addModifyListener({ evt -> this.update() })
-    val success = self.setText("""
+    showDefaultText()
+  }
+
+  fun showDefaultText() {
+    self.setText("""
 <html>
 <body>
 Open a post or page to see a preview of it
 </body>
 </html>
     """, false)
-    println("HTML rendering test: ${success}")
   }
 
   @Subscribe
   fun changedBlog(evt: ChangedBlog) {
     blog = evt.blog
+    showDefaultText()
   }
 
   @Subscribe
   fun fileOpened(evt: FileOpened) {
     val f = evt.file
-    if (f is Post) post = f
+    if (f is Post) {
+      post = f
+    } else {
+      post = null
+    }
+    update()
   }
 
   fun update() {
     val b = blog
     val p = post
-    if (b == null) return
-    if (p == null) return
-    val renderer = Renderer(b)
-    val text = renderer.renderSingle(p, edit.text)
-    val success = self.setText(text, false)
+    if (b == null || p == null) {
+      showDefaultText()
+      return
+    }
+    val url = "http://localhost:${SERVER_PORT}${p.path}"
+    println("navigating from ${self.url} to ${url}")
+    if (self.url == url) {
+      self.refresh()
+    } else {
+      self.url = url
+    }
   }
 }
 

@@ -21,6 +21,7 @@ dependencies {
   implementation("org.commonmark:commonmark:0.27.1")
   implementation("tools.jackson.dataformat:jackson-dataformat-xml:3.1.0")
   implementation("org.reflections:reflections:0.10.2")
+  implementation("org.eclipse.jetty:jetty-server:12.1.7")
 
   // TODO pick right version for the current platform
   implementation(files("lib/swt-linux-x64.jar"))

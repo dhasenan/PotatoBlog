@@ -50,6 +50,13 @@ class Context @Inject constructor(val eventBus: EventBus) {
 
 fun main(args: Array<String>) {
   val injector = Guice.createInjector(PotatoModule())
+  val server = injector.getInstance(BlogServer::class.java)
+  val serverThread = Thread({
+    server.startServer()
+  })
+  serverThread.setDaemon(true)
+  serverThread.start()
   val gui = injector.getInstance(MainGui::class.java)
   gui.run(args)
+  server.stopServer()
 }
