@@ -363,6 +363,7 @@ class PostInfoView @Inject constructor(
   }
 }
 
+@Singleton
 class EditView @Inject constructor(
   val ctx: Context,
   val infoView: PostInfoView,
@@ -370,6 +371,7 @@ class EditView @Inject constructor(
 ): View<Composite>() {
   lateinit var bodyEdit: StyledText
   var post: Post? = null
+  val listeners = mutableListOf<ModifyListener>()
 
   override fun build() {
     self = Composite(parent as Composite, SWT.FILL)
@@ -379,6 +381,11 @@ class EditView @Inject constructor(
     bodyEdit = StyledText(self, SWT.MULTI.or(SWT.V_SCROLL))
     bodyEdit.layoutData = GridData(SWT.FILL, SWT.FILL, true, true)
     bodyEdit.font = Font(display, fonts[0])
+    bodyEdit.addModifyListener({
+      for (listener in listeners) {
+        listener.modifyText(it)
+      }
+    })
   }
 
   @Subscribe
@@ -399,6 +406,13 @@ class EditView @Inject constructor(
     bodyEdit.text = f.body
     bodyEdit.editable = true
   }
+
+  fun addModifyListener(m: ModifyListener) {
+    listeners.add(m)
+  }
+
+  val text: String
+    get() { return bodyEdit.text }
 }
 
 class BlogTreeView @Inject constructor(val bus: EventBus): View<Tree>() {
@@ -512,6 +526,56 @@ class BlogTreeController {
   lateinit var view: BlogTreeView
 }
 
+@Singleton
+class Preview @Inject constructor(
+  val edit: EditView,
+): View<Browser>() {
+  var blog: Blog? = null
+  var post: Post? = null
+
+  override fun build() {
+    self = Browser(parent as Composite, SWT.NONE)
+    self.javascriptEnabled = false
+    self.addLocationListener(object: LocationListener {
+      override fun changed(evt: LocationEvent) {}
+      override fun changing(evt: LocationEvent) {
+        if (evt.location != "about:blank") evt.doit = false
+      }
+    })
+    edit.addModifyListener({ evt -> this.update() })
+    val success = self.setText("""
+<html>
+<body>
+Open a post or page to see a preview of it
+</body>
+</html>
+    """, false)
+    println("HTML rendering test: ${success}")
+  }
+
+  @Subscribe
+  fun changedBlog(evt: ChangedBlog) {
+    blog = evt.blog
+  }
+
+  @Subscribe
+  fun fileOpened(evt: FileOpened) {
+    val f = evt.file
+    if (f is Post) post = f
+  }
+
+  fun update() {
+    val b = blog
+    val p = post
+    if (b == null) return
+    if (p == null) return
+    val renderer = Renderer(b)
+    val text = renderer.renderSingle(p, edit.text)
+    val success = self.setText(text, false)
+  }
+}
+
+@Singleton
 class MainGui @Inject constructor(
     val ctx: Context,
     val shell: Shell,
@@ -519,6 +583,7 @@ class MainGui @Inject constructor(
     val mainMenu: MainMenu,
     val fileTree: BlogTreeView,
     val editView: EditView,
+    val preview: Preview,
     val persist: Persist,
   ) : ShellAdapter() {
   init {
@@ -529,8 +594,7 @@ class MainGui @Inject constructor(
     sash.layoutData = GridData(SWT.FILL, SWT.FILL, true, true)
     fileTree.parent = sash
     editView.parent = sash
-    val preview = Browser(sash, SWT.FILL)
-    preview.url = "https://example.org"
+    preview.parent = sash
     sash.setWeights(1, 4, 4)
   }
 

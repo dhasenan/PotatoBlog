@@ -152,3 +152,16 @@ fun basename(p: String): String {
   }
   return p.subSequence(s + 1, p.length).toString()
 }
+
+fun bareFileName(p: String): String {
+  var s = p.lastIndexOf("/")
+  if (s < 0) {
+    s = -1
+  }
+  var p2 = p.subSequence(s + 1, p.length)
+  s = p2.lastIndexOf(".")
+  if (s > 0) {
+    p2 = p2.substring(0, s)
+  }
+  return p2.toString()
+}

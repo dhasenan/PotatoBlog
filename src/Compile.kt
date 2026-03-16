@@ -7,6 +7,8 @@ import com.github.mustachejava.resolver.*
 
 import java.io.*
 import java.lang.reflect.*
+import java.nio.charset.StandardCharsets
+import jakarta.inject.Singleton
 
 import com.github.mustachejava.util.HtmlEscaper.escape
 
@@ -34,14 +36,15 @@ class SafeObjectHandler : SimpleObjectHandler() {
 }
 
 class BlogResolver(val blog: Blog) : DefaultResolver() {
-  override fun getReader(name: String): Reader {
-    val resource = blog.resource(name)
-    if (resource == null)
-      throw MustacheException("resource $name not found")
-    val str = resource.asString()
-    if (str == null)
-      throw MustacheException("tried to read resource $name as text, but it is ${resource.mimeType}")
-    return StringReader(str)
+  override fun getReader(name: String): Reader? {
+    for (file in blog.theme.files) {
+      if (file.path.endsWith("mustache")) {
+        if (bareFileName(file.path) == name) {
+          return StringReader(String(file.data, StandardCharsets.UTF_8))
+        }
+      }
+    }
+    return null
   }
 }
 
@@ -59,5 +62,43 @@ class PotatoMustacheFactory(val blog: Blog) : DefaultMustacheFactory(BlogResolve
 class NoPragmaVisitor(factory: DefaultMustacheFactory) : DefaultMustacheVisitor(factory) {
   override fun pragma(tc: TemplateContext, pragma: String, args: String) {
     throw MustacheException("Disallowed: pragmas in templates")
+  }
+}
+
+class RenderContext (
+  val blog: Blog,
+  val post: Post,
+  val mainContent: String = "",
+)
+
+@Singleton
+class Renderer(val blog: Blog) {
+  val factory = PotatoMustacheFactory(blog)
+  val page = factory.compile("page")
+  val post = factory.compile("post")
+  val default = factory.compile("default")
+
+  fun renderSingle(post: Post, overrideContents: String? = null): String {
+    // 1. Render post.html or page.html as appropriate
+    // 2. Render the results inside default.html
+    val baseTemplate = when (post.type) {
+      PostType.PAGE -> this.page 
+      PostType.BLOGPOST -> this.post 
+    }
+    var sw = StringWriter()
+    val tmp = post.body
+    if (overrideContents != null) {
+      post.body = overrideContents
+    }
+    try {
+      baseTemplate.execute(sw, RenderContext(blog, post))
+    } finally {
+      post.body = tmp
+    }
+
+    val rc = RenderContext(blog, post, sw.toString())
+    sw = StringWriter()
+    default.execute(sw, rc)
+    return sw.toString()
   }
 }

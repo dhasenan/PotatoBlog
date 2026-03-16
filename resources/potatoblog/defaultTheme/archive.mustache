@@ -1,14 +1,14 @@
 <h2>{{category}}</h2>
-<!-- {{#each}} repeats its contents for each item in the list -->
-{{#each posts}}
-  <!--
+{{! #each repeats its contents for each item in the list }}
+{{#posts}}
+  {{!
     In here, you can use stuff on the 'post' object directly.
     If you want to use a variable defined outside the 'post' object,
     you can do it like: {{../category}}
-  -->
+  }}
   <div class="archiveEntry">
     <h3>{{title}}</h3>
     <div class="date">posted at {{publishDate}}</div>
     <div class="slug">{{{slug}}}</div>
   </div>
-{{/each}}
+{{/posts}}
