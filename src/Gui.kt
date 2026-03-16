@@ -273,11 +273,10 @@ class PostInfoView @Inject constructor(
   lateinit var expandBar: ExpandBar
 
   override fun build() {
-    expandBar = ExpandBar(parent as Composite, SWT.V_SCROLL)
+    expandBar = ExpandBar(parent as Composite, SWT.V_SCROLL.or(SWT.FILL))
     expandBar.layout = FillLayout()
-    expandBar.background
+    expandBar.layoutData = GridData(SWT.FILL, SWT.TOP, true, false)
     self = Composite(expandBar, SWT.FILL)
-    self.layoutData = GridData(GridData.FILL_HORIZONTAL)
     self.layout = GridLayout(2, false)
 
     fun label(text: String) {
@@ -322,9 +321,7 @@ class PostInfoView @Inject constructor(
     publishTime = DateTime(datePanel, SWT.TIME)
     publishTime.addListener(SWT.Selection, {println("date activate")})
 
-    self.pack()
-
-    expander = ExpandItem(expandBar, SWT.NONE, 0)
+    expander = ExpandItem(expandBar, SWT.FILL, 0)
     expander.expanded = true
     expander.text = "Post details"
     expander.control = self
@@ -342,8 +339,6 @@ class PostInfoView @Inject constructor(
   fun resized() {
     display.asyncExec({
       expander.height = self.computeSize(SWT.DEFAULT, SWT.DEFAULT).y
-      // this is... weird
-      // because it shrinks the StyledText widget to a single line
       expandBar.requestLayout()
     })
   }
