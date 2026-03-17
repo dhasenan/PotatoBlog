@@ -531,11 +531,9 @@ class Preview @Inject constructor(
   override fun build() {
     self = Browser(parent as Composite, SWT.NONE)
     self.javascriptEnabled = false
-    self.addLocationListener(object: LocationListener {
-      override fun changed(evt: LocationEvent) {}
-      override fun changing(evt: LocationEvent) {
-      }
-    })
+    // I want a callback that lets me reject attempts to browse outside the correct domain
+    // But that seems not to be possible
+    // Disabling javascript disables a lot of potential badness
     edit.addModifyListener({ evt -> this.update() })
     showDefaultText()
   }
