@@ -11,6 +11,8 @@ import org.eclipse.swt.widgets.*
 import com.google.common.eventbus.EventBus
 import jakarta.inject.*
 import java.util.Timer
+import java.nio.file.*
+import java.util.stream.Stream
 
 abstract class View<TComposite> where TComposite : Widget {
   lateinit var self: TComposite
@@ -176,6 +178,11 @@ class FileMenuView @Inject constructor(
     openItem.addListener(SWT.Selection, {e -> controller.openBlog()})
     newItem.accelerator = ctrl('o')
 
+    val renderItem = MenuItem(fileMenu, SWT.PUSH)
+    renderItem.text = "&Render"
+    renderItem.addListener(SWT.Selection, {e -> controller.renderBlog()})
+    newItem.accelerator = ctrl('s')
+
     val saveItem = MenuItem(fileMenu, SWT.PUSH)
     saveItem.text = "&Save"
     saveItem.addListener(SWT.Selection, {e -> controller.saveBlog()})
@@ -185,6 +192,18 @@ class FileMenuView @Inject constructor(
     quitItem.text = "&Quit"
     quitItem.addListener(SWT.Selection, {e -> controller.quit()})
     newItem.accelerator = ctrl('q')
+  }
+
+  fun getRenderPath(): String? {
+    val fod = DirectoryDialog(shell, SWT.OPEN)
+    val path = fod.open()
+    if (path == null) return null
+    if (Files.list(Paths.get(path)).findAny().isPresent()) {
+      val warning = Shell(shell, SWT.DIALOG_TRIM.or(SWT.APPLICATION_MODAL))
+      warning.layout = GridLayout(3, false)
+      Label(warning, SWT.NONE).text = "This directory isn't empty. Delete everything in it first?"
+    }
+    return path
   }
 
   fun getSavePath(): String? {
@@ -235,6 +254,13 @@ class FileMenuController @Inject constructor(
       return
     }
     ctx.openBlog(blog, path)
+  }
+
+  fun renderBlog() {
+    val path = view.getRenderPath()
+    val blog = ctx.blog
+    if (path == null || blog == null) return
+    Renderer(blog).renderVisitor(FilesystemVisitor(path))
   }
 
   fun newPost() {
@@ -539,13 +565,7 @@ class Preview @Inject constructor(
   }
 
   fun showDefaultText() {
-    self.setText("""
-<html>
-<body>
-Open a post or page to see a preview of it
-</body>
-</html>
-    """, false)
+    self.setText("<html><body>Open a post or page to see a preview of it</body></html>", false)
   }
 
   @Subscribe

@@ -127,9 +127,8 @@ class StaticFile: BlogFile {
   @JsonIgnore
   var data = ByteArray(0)
 
-  fun asString(): String? {
-    return null
-  }
+  val shouldCopy: Boolean
+    get() { return !path.endsWith(".mustache") }
 }
 
 class Theme {
@@ -140,7 +139,7 @@ class Theme {
 fun pathParent(p: String): String {
   val s = p.lastIndexOf("/")
   if (s <= 0) {
-    return p
+    return ""
   }
   return p.subSequence(0, s).toString()
 }

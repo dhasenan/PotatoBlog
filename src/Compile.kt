@@ -5,10 +5,13 @@ import com.github.mustachejava.codes.*
 import com.github.mustachejava.reflect.*
 import com.github.mustachejava.resolver.*
 
+import jakarta.inject.Singleton
 import java.io.*
+import java.io.FileOutputStream
 import java.lang.reflect.*
 import java.nio.charset.StandardCharsets
-import jakarta.inject.Singleton
+import java.nio.file.*
+import java.util.zip.*
 
 import com.github.mustachejava.util.HtmlEscaper.escape
 
@@ -71,7 +74,6 @@ class RenderContext (
   val mainContent: String = "",
 )
 
-@Singleton
 class Renderer(val blog: Blog) {
   val factory = PotatoMustacheFactory(blog)
   val page = factory.compile("page")
@@ -101,4 +103,67 @@ class Renderer(val blog: Blog) {
     default.execute(sw, rc)
     return sw.toString()
   }
+
+  fun renderVisitor(visitor: RenderVisitor) {
+    visitor.open(blog)
+    for (post in blog.posts) {
+      visitor.directory(pathParent(post.path))
+      val s = renderSingle(post)
+      val data = StandardCharsets.UTF_8.encode(s)
+      val array = ByteArray(data.remaining())
+      data.get(array)
+      visitor.file(post.path, array)
+    }
+    for (sf in blog.staticFiles) {
+      visitor.directory(pathParent(sf.path))
+      visitor.file(sf.path, sf.data)
+    }
+    for (sf in blog.theme.files) {
+      if (sf.shouldCopy) {
+        visitor.directory(pathParent(sf.path))
+        visitor.file(sf.path, sf.data)
+      }
+    }
+    visitor.close()
+  }
+}
+
+interface RenderVisitor {
+  fun open(blog: Blog)
+  fun directory(dir: String)
+  fun file(path: String, data: ByteArray)
+  fun close()
+}
+
+class ZipVisitor(val zipPath: String): RenderVisitor {
+  val zip = ZipOutputStream(FileOutputStream(zipPath))
+  override fun open(blog: Blog) {}
+  override fun directory(dir: String) {}
+
+  override fun file(path: String, data: ByteArray) {
+    zip.putNextEntry(ZipEntry(path))
+    zip.write(data, 0, data.size)
+  }
+
+  override fun close() {
+    zip.flush()
+    zip.close()
+  }
+}
+
+class FilesystemVisitor(val basePath: String): RenderVisitor {
+  override fun open(blog: Blog) {}
+
+  override fun directory(dir: String) {
+    val path = Paths.get(basePath, dir)
+    Files.createDirectories(path)
+  }
+
+  override fun file(filePath: String, data: ByteArray) {
+    println("writing ${filePath} with ${data.size} bytes")
+    val path = Paths.get(basePath, filePath)
+    Files.write(path, data)
+  }
+
+  override fun close() {}
 }
