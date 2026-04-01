@@ -378,7 +378,7 @@ class PostInfoView @Inject constructor(
     path.text = file.path
     postType.select(0)
     publicationStatus.selection = file.status == PostStatus.PUBLISHED
-    val d = file.publishDate
+    val d = file.date
     publishDate.setDate(d.year, d.month.value - 1, d.dayOfMonth)
     publishTime.setTime(d.hour, d.minute, d.second)
   }
@@ -403,6 +403,10 @@ class EditView @Inject constructor(
     bodyEdit.layoutData = GridData(SWT.FILL, SWT.FILL, true, true)
     bodyEdit.font = Font(display, fonts[0])
     bodyEdit.addModifyListener({
+      val p = post
+      if (p != null) {
+        p.unsavedBody = text
+      }
       for (listener in listeners) {
         listener.modifyText(it)
       }
@@ -424,6 +428,7 @@ class EditView @Inject constructor(
     }
     post = f
     infoView.post = f
+    f.unsavedBody = f.body
     bodyEdit.text = f.body
     bodyEdit.editable = true
   }

@@ -15,9 +15,11 @@ fun defaultBlog(): Blog {
   val firstPost = Post()
   firstPost.status = PostStatus.PUBLISHED
   firstPost.path = "/posts/first.html"
+  firstPost.author = blog.author
   blog.posts.add(firstPost)
   val aboutMe = Post()
   aboutMe.type = PostType.PAGE
+  aboutMe.title = "About Me!"
   aboutMe.path = "/about.html"
   aboutMe.body = "I'm a person with a blog!"
   aboutMe.status = PostStatus.PUBLISHED
@@ -98,10 +100,17 @@ class Post: BlogFile {
   var status = PostStatus.DRAFT
   var title = "A Very Good Post"
   override var path = ""
-  var publishDate = now()
+  var date = now()
   var bodyType = BodyType.MARKDOWN
+
+  var overrideAuthor: String? = null
+  @JsonIgnore
+  var author: String? = null
+
   @JsonIgnore
   var body = "This is my post, and I am proud of it"
+  @JsonIgnore
+  var unsavedBody: String? = null
 
   override val mimeType: String
     get() {
@@ -110,6 +119,8 @@ class Post: BlogFile {
         BodyType.HTML -> "text/html"
       }
     }
+  @JsonIgnore
+  var bodyHTML: String = ""
 }
 
 enum class FileUsage {

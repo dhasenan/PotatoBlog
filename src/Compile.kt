@@ -72,7 +72,10 @@ class RenderContext (
   val blog: Blog,
   val post: Post,
   val mainContent: String = "",
-)
+) {
+  val page: Post
+    get() { return post }
+}
 
 class Renderer(val blog: Blog) {
   val factory = PotatoMustacheFactory(blog)
@@ -88,16 +91,11 @@ class Renderer(val blog: Blog) {
       PostType.BLOGPOST -> this.post 
     }
     var sw = StringWriter()
-    val tmp = post.body
-    if (overrideContents != null) {
-      post.body = overrideContents
-    }
-    try {
-      baseTemplate.execute(sw, RenderContext(blog, post))
-    } finally {
-      post.body = tmp
-    }
+    baseTemplate.execute(sw, RenderContext(blog, post, overrideContents ?: post.body))
 
+    // TODO render markdown to HTML
+    post.bodyHTML = overrideContents ?: post.body
+    post.author = post.overrideAuthor ?: blog.author
     val rc = RenderContext(blog, post, sw.toString())
     sw = StringWriter()
     default.execute(sw, rc)

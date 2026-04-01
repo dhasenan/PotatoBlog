@@ -76,7 +76,7 @@ class BlogServer @Inject constructor(val ctx: Context): Handler.Abstract() {
       println("post: ${post.path} vs ${path}")
       if (samePath(post.path, path)) {
         var text: String = try {
-          Renderer(blog).renderSingle(post, post.body)
+          Renderer(blog).renderSingle(post, post.unsavedBody)
         } catch (e: Exception) {
           errorHTML(path, e)
         }
