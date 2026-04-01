@@ -6,6 +6,8 @@ import com.google.inject.spi.*
 import com.google.common.eventbus.EventBus
 import org.eclipse.swt.widgets.Display
 import org.eclipse.swt.widgets.Shell
+import org.commonmark.parser.Parser
+import org.commonmark.renderer.html.HtmlRenderer
 
 class MatchAll() : Matcher<Any> {
   override fun matches(o: Any): Boolean {
@@ -49,6 +51,11 @@ class Context @Inject constructor(val eventBus: EventBus) {
 }
 
 fun main(args: Array<String>) {
+val parser = Parser.builder().build()
+val document = parser.parse("I'm a person with a blog!\n")
+val renderer = HtmlRenderer.builder().build()
+println("${renderer.render(document)}")
+
   val injector = Guice.createInjector(PotatoModule())
   val server = injector.getInstance(BlogServer::class.java)
   val serverThread = Thread({

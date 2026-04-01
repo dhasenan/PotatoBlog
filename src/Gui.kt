@@ -446,9 +446,9 @@ class EditView @Inject constructor(
       val p = post
       if (p != null) {
         p.unsavedBody = text
-      }
-      for (listener in listeners) {
-        listener.modifyText(it)
+        for (listener in listeners) {
+          listener.modifyText(it)
+        }
       }
     })
   }
@@ -478,7 +478,10 @@ class EditView @Inject constructor(
   }
 
   val text: String
-    get() { return bodyEdit.text }
+    get() {
+      // For some reason, `text` often comes with trailing null bytes
+      return bodyEdit.text.replace("\u0000", "")
+    }
 }
 
 class BlogTreeView @Inject constructor(val bus: EventBus): View<Tree>() {

@@ -5,7 +5,7 @@
  * Learn more about Gradle by exploring our Samples at https://docs.gradle.org/8.14.1/samples
  */
 plugins {
-  alias(libs.plugins.kotlin.jvm)
+  kotlin("jvm") version "2.3.20"
   application
 }
 
@@ -18,7 +18,7 @@ dependencies {
   implementation("com.google.inject:guice:7.0.0")
   implementation("com.github.spullara.mustache.java:compiler:0.9.14")
   implementation("commons-io:commons-io:2.19.0")
-  implementation("org.commonmark:commonmark:0.27.1")
+  implementation("org.commonmark:commonmark:0.28.0")
   implementation("tools.jackson.dataformat:jackson-dataformat-xml:3.1.0")
   implementation("org.reflections:reflections:0.10.2")
   implementation("org.eclipse.jetty:jetty-server:12.1.7")

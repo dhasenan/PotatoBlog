@@ -71,15 +71,11 @@ class BlogServer @Inject constructor(val ctx: Context): Handler.Abstract() {
       return true
     }
     val path = req.httpURI.path
-    // find something that starts with this path
+    // find something for this path
+    // try posts
     for (post in blog.posts) {
-      println("post: ${post.path} vs ${path}")
       if (samePath(post.path, path)) {
-        var text: String = try {
-          Renderer(blog).renderSingle(post, post.unsavedBody)
-        } catch (e: Exception) {
-          errorHTML(path, e)
-        }
+        val text = Renderer(blog).renderSingle(post, post.unsavedBody)
         htmlHeader(resp)
         Content.Sink.write(resp, true, text, cb)
         return true
@@ -88,7 +84,6 @@ class BlogServer @Inject constructor(val ctx: Context): Handler.Abstract() {
 
     // try static files
     for (file in blog.staticFiles) {
-      println("static: ${file.path} vs ${path}")
       if (samePath(file.path, path)) {
         resp.headers.put(HttpHeader.CONTENT_TYPE, file.mimeType)
         Content.Sink.write(resp, true, ByteBuffer.wrap(file.data))
@@ -99,7 +94,6 @@ class BlogServer @Inject constructor(val ctx: Context): Handler.Abstract() {
 
     // try static files
     for (file in blog.theme.files) {
-      println("theme: ${file.path} vs ${path}")
       if (samePath(file.path, path)) {
         resp.headers.put(HttpHeader.CONTENT_TYPE, file.mimeType)
         Content.Sink.write(resp, true, ByteBuffer.wrap(file.data))
@@ -109,7 +103,8 @@ class BlogServer @Inject constructor(val ctx: Context): Handler.Abstract() {
     }
 
     // not found
-    Response.writeError(req, resp, cb, HttpStatus.NOT_FOUND_404)
+    htmlHeader(resp)
+    Content.Sink.write(resp, true, DEFAULT_HTML, cb)
     return true
   }
 }

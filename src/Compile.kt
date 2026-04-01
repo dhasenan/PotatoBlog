@@ -1,5 +1,7 @@
 package potatoblog
 
+import org.commonmark.parser.Parser
+import org.commonmark.renderer.html.HtmlRenderer
 import com.github.mustachejava.*
 import com.github.mustachejava.codes.*
 import com.github.mustachejava.reflect.*
@@ -82,8 +84,19 @@ class Renderer(val blog: Blog) {
   val page = factory.compile("page")
   val post = factory.compile("post")
   val default = factory.compile("default")
+  val mdParser = Parser.builder().build()
+  val mdRenderer = HtmlRenderer.builder().build()
 
   fun renderSingle(post: Post, overrideContents: String? = null): String {
+    var body = overrideContents ?: post.body
+    if (post.bodyType == BodyType.MARKDOWN) {
+      val doc = mdParser.parse(body)
+      body = mdRenderer.render(doc)
+    }
+
+    post.bodyHTML = body
+    post.author = post.overrideAuthor ?: blog.author
+
     // 1. Render post.html or page.html as appropriate
     // 2. Render the results inside default.html
     val baseTemplate = when (post.type) {
@@ -92,10 +105,6 @@ class Renderer(val blog: Blog) {
     }
     var sw = StringWriter()
     baseTemplate.execute(sw, RenderContext(blog, post, overrideContents ?: post.body))
-
-    // TODO render markdown to HTML
-    post.bodyHTML = overrideContents ?: post.body
-    post.author = post.overrideAuthor ?: blog.author
     val rc = RenderContext(blog, post, sw.toString())
     sw = StringWriter()
     default.execute(sw, rc)
