@@ -100,7 +100,7 @@ class Post: BlogFile {
   var status = PostStatus.DRAFT
   var title = "A Very Good Post"
   override var path = ""
-  var date = now()
+  var publishDate = now()
   var bodyType = BodyType.MARKDOWN
 
   var overrideAuthor: String? = null
@@ -121,6 +121,12 @@ class Post: BlogFile {
     }
   @JsonIgnore
   var bodyHTML: String = ""
+  val date: String
+    @JsonIgnore
+    get() {
+      return publishDate.format(java.time.format.DateTimeFormatter.ofLocalizedDate(
+        java.time.format.FormatStyle.LONG))
+    }
 }
 
 enum class FileUsage {

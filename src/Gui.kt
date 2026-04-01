@@ -297,6 +297,7 @@ class PostInfoView @Inject constructor(
   lateinit var publishTime: DateTime
   lateinit var expander: ExpandItem
   lateinit var expandBar: ExpandBar
+  val listeners = mutableListOf<ModifyListener>()
 
   override fun build() {
     expandBar = ExpandBar(parent as Composite, SWT.V_SCROLL.or(SWT.FILL))
@@ -316,25 +317,25 @@ class PostInfoView @Inject constructor(
     title = Text(self, SWT.BORDER)
     title.editable = true
     title.layoutData = GridData(SWT.FILL, SWT.CENTER, true, false)
-    title.addListener(SWT.Selection, {println("publication status activate")})
+    title.addListener(SWT.Modify, { modified(it) })
     // path
     label("Path")
     path = Text(self, SWT.BORDER)
     path.editable = true
     path.layoutData = GridData(SWT.FILL, SWT.CENTER, true, false)
-    path.addListener(SWT.Selection, {println("publication status activate")})
+    path.addListener(SWT.Modify, { modified(it) })
     // type (post vs page)
     label("Type")
     postType = Combo(self, SWT.DROP_DOWN)
     postType.setItems("Page", "Post")
     postType.data = listOf(PostType.PAGE, PostType.BLOGPOST)
     postType.layoutData = GridData(SWT.FILL, SWT.CENTER, true, false)
-    postType.addListener(SWT.Selection, {println("publication status activate")})
+    postType.addListener(SWT.Selection, { modified(it) })
     // publication status
     publicationStatus = Button(self, SWT.CHECK)
     publicationStatus.text = "Published"
     publicationStatus.layoutData = GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1)
-    publicationStatus.addListener(SWT.Selection, {println("publication status activate")})
+    publicationStatus.addListener(SWT.Selection, { modified(it) })
 
     label("Publish Date")
     val datePanel = Composite(self, 0)
@@ -342,10 +343,10 @@ class PostInfoView @Inject constructor(
     datePanel.layout = RowLayout()
     // publication date
     publishDate = DateTime(datePanel, SWT.DATE)
-    publishDate.addListener(SWT.Selection, {println("date activate")})
+    publishDate.addListener(SWT.Selection, { modified(it) })
     // publication time
     publishTime = DateTime(datePanel, SWT.TIME)
-    publishTime.addListener(SWT.Selection, {println("date activate")})
+    publishTime.addListener(SWT.Selection, { modified(it) })
 
     expander = ExpandItem(expandBar, SWT.FILL, 0)
     expander.expanded = true
@@ -369,18 +370,51 @@ class PostInfoView @Inject constructor(
     })
   }
 
+  fun modified(event: Event) {
+    val p = post
+    if (p == null) return
+    p.title = title.text
+    p.path = path.text
+    p.publishDate = java.time.ZonedDateTime.of(
+      publishDate.year,
+      publishDate.month + 1,
+      publishDate.day,
+      publishTime.hours,
+      publishTime.minutes,
+      0,
+      0,
+      java.time.ZoneId.systemDefault()
+    )
+    p.type = (postType.data as List<PostType>)[postType.selectionIndex]
+    if (publicationStatus.selection) {
+      p.status = PostStatus.PUBLISHED
+    } else {
+      p.status = PostStatus.DRAFT
+    }
+
+    val mod = ModifyEvent(event)
+    for (m in listeners) {
+      m.modifyText(mod)
+    }
+  }
+
+  fun addModifyListener(m: ModifyListener) {
+    listeners.add(m)
+  }
+
   @Subscribe
   fun fileOpened(f: FileOpened) {
+    this.post = null
     val file = f.file
     if (file !is Post) return
-    this.post = file
     title.text = file.title
     path.text = file.path
     postType.select(0)
     publicationStatus.selection = file.status == PostStatus.PUBLISHED
-    val d = file.date
+    val d = file.publishDate
     publishDate.setDate(d.year, d.month.value - 1, d.dayOfMonth)
     publishTime.setTime(d.hour, d.minute, d.second)
+    this.post = file
   }
 }
 
@@ -398,6 +432,12 @@ class EditView @Inject constructor(
     self = Composite(parent as Composite, SWT.FILL)
     self.setLayout(GridLayout(1, true))
     infoView.parent = self
+    infoView.addModifyListener({
+      for (listener in listeners) {
+        listener.modifyText(it)
+      }
+    })
+
     val fonts = display.getFontList("Monospace", true)
     bodyEdit = StyledText(self, SWT.MULTI.or(SWT.V_SCROLL))
     bodyEdit.layoutData = GridData(SWT.FILL, SWT.FILL, true, true)
@@ -598,7 +638,6 @@ class Preview @Inject constructor(
       return
     }
     val url = "http://localhost:${SERVER_PORT}${p.path}"
-    println("navigating from ${self.url} to ${url}")
     if (self.url == url) {
       self.refresh()
     } else {
